@@ -1,0 +1,40 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Local data files (use remote Pinecone instead)
+data/
+logs/
+
+# Development files
+*.md
+.env
+.env.local
+eda.ipynb
+
+# Run-once scripts (not needed in production)
+run_one_time/
+
+# Test files
+tests/
+.pytest_cache/
+.coverage
+htmlcov/

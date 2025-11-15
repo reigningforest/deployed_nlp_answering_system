@@ -1,0 +1,14 @@
+Message summary:
+- Member referenced in question: {member_name}
+- Latest recorded activity: {latest_activity}
+- Snippets retrieved: {snippet_count}
+
+Messages (oldest -> newest, all from this member):
+Each line shows timestamp and member name; use those details for precise references when needed.
+{context}
+
+Question: {question}
+
+Respond exactly in this format:
+Reasoning: <one sentence citing the most relevant snippet>
+Answer: <natural-sounding sentence that answers the question>
