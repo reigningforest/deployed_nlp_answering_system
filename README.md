@@ -50,7 +50,13 @@ A minimal API service that answers natural-language questions about member messa
    uvicorn main:app --reload
    ```
 
-5. **Test locally**
+5. **Ping the FastAPI health check**
+   ```bash
+   curl -s http://localhost:8000/
+   ```
+   You should see `{ "status": "ok", "message": "Q&A Service is running." }` if the server is healthy.
+
+6. **Send a sample question**
    ```bash
     curl -X POST http://localhost:8000/ask \
        -H "Content-Type: application/json" \
@@ -70,6 +76,19 @@ A minimal API service that answers natural-language questions about member messa
    - `GROQ_MODEL`
 5. Create a volume in Railway and mount it (for example to `/data`). Set `SPACY_MODEL_DIR=/data/spacy` so the large `en_core_web_lg` model is cached between deployments.
 6. Railway will automatically detect the Dockerfile and deploy
+7. **Verify the live service**
+    ```bash
+    export RAILWAY_URL="https://your-railway-subdomain.up.railway.app"
+
+    # Health check
+    curl -s "$RAILWAY_URL/"
+
+    # Ask a question
+    curl -X POST "$RAILWAY_URL/ask" \
+       -H "Content-Type: application/json" \
+       -d '{"question": "When is Layla planning her trip to London?"}'
+    ```
+    Replace `your-railway-subdomain` with the domain Railway assigns under the project’s Settings → Domains tab.
 
 ### Option 2: Render
 
@@ -160,7 +179,9 @@ The service requires `en_core_web_lg` for high-quality name extraction. Instead 
    - I thought about creating a structured timeline database summarizing user trips extracted from messages to facilitate more accurate date-related queries. However, this would require significant upfront processing and might not cover all edge cases, so I decided to rely on the existing message data with enhanced prompt engineering instead.
 4. **Categorizations of messages and query**:
    - I considered categorizing messages (e.g., travel plans, purchases, dining) and classifying user queries to route them to specialized retrieval/generation pipelines. However, this would add complexity and quite a bit of upfront processing, so I opted for a single unified approach with improved prompt instructions.
-
+5.  **Keyword-Based Name Matching**:
+    - I considered creating a simple `Set` of all unique member names (e.g., "Vikram Desai") on startup. When a query came in, the service would iterate through this set and check if any name was a substring of the question.
+    - **Reason for Choosing NER Instead:** This simple keyword-matching approach is fast but very brittle. It would fail on common and crucial variations, particularly possessives (e.g., it wouldn't match "Layla" in "Layla's trip"). A statistical NER model, while not perfect, is trained to be context-aware and can correctly identify "Layla" as a `PERSON` entity from "Layla's," making it a more robust and flexible solution out-of-the-box.
 
 ### Data Insights
 
