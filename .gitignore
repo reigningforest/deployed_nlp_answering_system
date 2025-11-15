@@ -209,7 +209,8 @@ marimo/_lsp/
 __marimo__/
 
 # Project-specific
-!*known_names.json
 data/
+data/*
+[known_names.json](http://_vscodecontentref_/6)
 logs/
 *.log
