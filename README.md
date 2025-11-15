@@ -150,10 +150,10 @@ The service requires `en_core_web_lg` for high-quality name extraction. Instead 
 
 
 ## Design Notes
-### Alternative Approaches Considered
+### Alternative Approaches
 1. **Creating User Profiles**:
    - Ideally, the simple name handling could be improved by maintaining a user profile database with nicknames and list of facts (e.g., favorite foods, hobbies). However, this would require additional data that likely wouldn't be able to be extracted from user messages along, so I opted for an approach using NER and cached names.
-   - To query the user profile database, I'd expose it via an MCP tool (client-initiated call into the profile service) or pipe the question through text-to-SQL so the agent can hit the structured database directly with low latency.
+   - To query the user profile database, I'd expose it via an MCP tool (client-initiated call into the profile service) or pipe the question through text-to-SQL so the agent can hit the structured database directly.
 2. **Improving Retrieval**:
    - I considered building an agentic system where the first step would be to generate multiple alternative questions to improve lookup accuracy in Pinecone. However, for such a small dataset (and such short messages), this would likely add unnecessary complexity and latency without significant benefit.
 3. **Summary timeline database of user trips**:

@@ -28,5 +28,5 @@ COPY . .
 EXPOSE 8000
 
 # Run the FastAPI app with uvicorn
-# Use $PORT environment variable with fallback to 8000
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Wrap in sh -c so ${PORT:-8000} is interpreted at runtime.
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
