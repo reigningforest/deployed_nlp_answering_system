@@ -210,7 +210,5 @@ __marimo__/
 
 # Project-specific
 data/
-data/*
-[known_names.json](http://_vscodecontentref_/6)
 logs/
 *.log
