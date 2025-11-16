@@ -22,51 +22,68 @@ curl -X POST https://simple-nlp-answering-system.up.railway.app/ask \
 - "How many cars does Vikram Desai have?"
 - "What are Amina's favorite restaurants?"
 
+## Features
+
+- **🔍 Semantic Search**: Uses FastEmbed (BAAI/bge-small-en-v1.5) to embed queries and messages for accurate similarity-based retrieval
+- **👤 Smart Name Recognition**: spaCy NER (en_core_web_md) extracts person names from queries, with fuzzy matching and first-name disambiguation
+- **📊 Contextual Filtering**: Retrieves top-K most relevant messages filtered by detected member names for focused results
+- **🧠 LLM Generation**: Groq API (llama-3.3-70b-versatile) synthesizes natural language answers from retrieved context
+- **⚡ Fast Cold Starts**: Models pre-initialized at startup (~20s) for sub-3s response times on first request
+- **🔒 Rate Limiting**: Built-in request throttling (5 req/min per IP) to prevent abuse
+- **📦 Production-Ready**: Docker containerized with persistent model caching and health checks
+- **🌐 CORS Enabled**: Cross-origin requests supported for frontend integration
+- **📝 Structured Prompts**: Custom system/user prompts loaded from files for easy tuning
+
+
 ## Architecture
 
-- **Data Ingestion**: Fetches messages from the November7 API (`GET /messages`) and stores locally
-- **Vector Store**: Messages are embedded using FastEmbed (`BAAI/bge-small-en-v1.5`) and indexed in Pinecone
-- **Retrieval**: Uses semantic search with Name Entity Based (NER) based filtering plus a cached `known_names.json` lookup to validate/auto-complete member names before querying Pinecone vector database
-- **Generation**: Groq API generates natural language answers from context
-- **API**: FastAPI service with rate limiting
+- **Data Ingestion**: Fetches messages from the November7 API (`GET /messages`) and stores locally in JSON format with embeddings
+- **Vector Store**: Messages are embedded using FastEmbed (`BAAI/bge-small-en-v1.5`, 384 dims) and indexed in Pinecone with cosine similarity
+- **Retrieval**: Two-stage process: (1) spaCy NER extracts person entities from query, (2) semantic search in Pinecone filtered by member name
+- **Name Resolution**: Cached `known_names.json` provides fuzzy matching, first-name disambiguation, and "Did you mean?" suggestions
+- **Generation**: Groq API (llama-3.3-70b-versatile) receives chronologically sorted context with metadata (member name, latest activity, snippet count)
+- **API**: FastAPI service with async lifespan for model pre-initialization, structured logging, and comprehensive error handling
 
 ## Design Notes
 ### Alternative Approaches
 1. **Creating User Profiles**:
-   - Ideally, the simple name handling could be improved by maintaining a user profile database with nicknames and list of facts (e.g., favorite foods, hobbies). However, this would require additional data that likely wouldn't be able to be extracted from user messages along, so I opted for an approach using NER and cached names.
-   - To query the user profile database, I'd expose it via an MCP tool (client-initiated call into the profile service) or pipe the question through text-to-SQL so the agent can hit the structured database directly.
+   - Ideally, the question answers could be improved by maintaining a user profile database with nicknames and list of facts (e.g., favorite foods, hobbies). However, this would require much more setup (e.g., defining a schema for the profile database or defining an llm prompt to summarize the messages), so I opted for an approach using NER and RAG based message retrieval.
+   - If I had created a user profile database, I'd expose it via an MCP tool (client-initiated call into the profile service) or pipe the question through text-to-SQL so the agent can hit the structured database directly.
 2. **Improving Retrieval**:
    - I considered building an agentic system where the first step would be to generate multiple alternative questions to improve lookup accuracy in Pinecone. However, for such a small dataset (and such short messages), this would likely add unnecessary complexity and latency without significant benefit.
 3. **Summary timeline database of user trips**:
-   - I thought about creating a structured timeline database summarizing user trips extracted from messages to facilitate more accurate date-related queries. However, this would require significant upfront processing and might not cover all edge cases, so I decided to rely on the existing message data with enhanced prompt engineering instead.
+   - I thought about creating a structured timeline database summarizing user trips extracted from messages (creating a timeline/history database) to facilitate more accurate date-related queries. However, this would require significant upfront processing and might not cover all edge cases, so I decided to rely on the existing message data with enhanced prompt engineering instead.
 4. **Categorizations of messages and query**:
    - I considered categorizing messages (e.g., travel plans, purchases, dining) and classifying user queries to route them to specialized retrieval/generation pipelines. However, this would add complexity and quite a bit of upfront processing, so I opted for a single unified approach with improved prompt instructions.
 5.  **Keyword-Based Name Matching**:
     - I considered creating a simple `Set` of all unique member names (e.g., "Vikram Desai") on startup. When a query came in, the service would iterate through this set and check if any name was a substring of the question.
     - **Reason for Choosing NER Instead:** This simple keyword-matching approach is fast but very brittle. It would fail on common and crucial variations, particularly possessives (e.g., it wouldn't match "Layla" in "Layla's trip"). A statistical NER model, while not perfect, is trained to be context-aware and can correctly identify "Layla" as a `PERSON` entity from "Layla's," making it a more robust and flexible solution out-of-the-box.
 
-### Data Insights
 
-Analysis of 3,349 messages from 10 members over 364 days (Nov 2024 - Nov 2025) revealed:
+### Data Insights
+3,349 messages from 10 members over 364 days (Nov 2024 - Nov 2025)
 
 **Data Quality:**
 - No missing timestamps, duplicate IDs, or malformed data
 - All timestamps are UTC-aware and within valid range
 - Zero duplicate messages (100% unique content)
 - 2 extremely short messages (<10 chars) - appear to be incomplete sentences
+   - "I want to" and "I finally"
 - 48 long messages (>88 chars) - mostly from Amina Van Den Berg requesting travel/concierge services
 
 **Message Patterns:**
 - Average message length: 68 characters (median: 68, std: 8.7)
 - Message frequency: ~26 hours between messages (median: 18 hours)
 - Fastest burst: 1.13 minutes between consecutive messages
-- Longest gap: 7.77 days between messages
+- Longest gap: ~7 days between messages
 - Uneven distribution: 288-365 messages per user (Lorenzo Cavalli has fewest, Lily O'Sullivan has most)
 
 **Notable Observations:**
-- All users have nearly identical message counts (~334 avg), suggesting synthetic/balanced data generation
+- All users have nearly identical message counts (~334 avg)
 - No duplicate message content despite high volume, indicating carefully curated dataset
 - Message timing shows realistic human patterns with variable gaps
+- From visual inspection, messages generally appear to be about scheduling restaurant visits (Michelin star), travel plans, and car service requests, updating profile information / preferences (e.g., favorite cuisines, phone numbers, insurance info, etc.), all of which generally align with what a concierge service might build.
+
 
 ## Local Development
 
