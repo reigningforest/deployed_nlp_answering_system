@@ -81,9 +81,7 @@ curl -X POST https://simple-nlp-answering-system.up.railway.app/ask \
 **Notable Observations:**
 - All users have nearly identical message counts (~334 avg)
 - No duplicate message content despite high volume, indicating carefully curated dataset
-- Message timing shows realistic human patterns with variable gaps
-- From visual inspection, messages generally appear to be about scheduling restaurant visits (Michelin star), travel plans, and car service requests, updating profile information / preferences (e.g., favorite cuisines, phone numbers, insurance info, etc.), all of which generally align with what a concierge service might build.
-
+- From visual inspection, messages generally appear to be about scheduling restaurant visits (Michelin star), travel plans, and car service requests, updating profile information / preferences (e.g., favorite cuisines, phone numbers, insurance info, etc.), vactions, etc. all of which generally align with what a concierge service might build.
 
 ## Local Development
 
