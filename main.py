@@ -19,6 +19,7 @@ async def lifespan(app: FastAPI):
 	try:
 		from fastembed import TextEmbedding
 		from src.rag.spacy_model import ensure_spacy_model
+		from src.rag.service import _get_service
 		import yaml
 		from pathlib import Path
 		
@@ -41,6 +42,11 @@ async def lifespan(app: FastAPI):
 				storage_dir=config.get("ner_model_storage_dir", "./runtime_models/spacy")
 			)
 			logger.info("spaCy model initialized")
+			
+			# Pre-initialize the QAService (loads RetrievalEngine with models)
+			logger.info("Pre-initializing QA service...")
+			_get_service()
+			logger.info("QA service initialized and ready")
 	except Exception as e:
 		logger.warning(f"Failed to pre-initialize models: {e}")
 	
