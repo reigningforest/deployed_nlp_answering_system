@@ -1,5 +1,6 @@
 """FastAPI entrypoint exposing the QA service."""
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -11,9 +12,47 @@ from src.utils import get_shared_logger
 
 logger = get_shared_logger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+	"""Pre-initialize models at startup to speed up first request."""
+	try:
+		from fastembed import TextEmbedding
+		from src.rag.spacy_model import ensure_spacy_model
+		import yaml
+		from pathlib import Path
+		
+		# Load config
+		config_path = Path("config/config.yaml")
+		if config_path.exists():
+			with open(config_path) as f:
+				config = yaml.safe_load(f)
+			
+			# Pre-initialize FastEmbed
+			logger.info("Pre-initializing FastEmbed model...")
+			TextEmbedding(model_name=config.get("fast_embed_name", "BAAI/bge-small-en-v1.5"))
+			logger.info("FastEmbed model initialized")
+			
+			# Pre-initialize spaCy model
+			logger.info("Pre-initializing spaCy model...")
+			ensure_spacy_model(
+				model_name=config.get("ner_model", "en_core_web_md"),
+				version=config.get("ner_model_version", "3.7.0"),
+				storage_dir=config.get("ner_model_storage_dir", "./runtime_models/spacy")
+			)
+			logger.info("spaCy model initialized")
+	except Exception as e:
+		logger.warning(f"Failed to pre-initialize models: {e}")
+	
+	yield
+	
+	# Cleanup (if needed)
+
+
 app = FastAPI(
 	title="Simple NLP Q&A Service",
 	description="Answers questions about member data using a RAG system.",
+	lifespan=lifespan,
 )
 
 

@@ -16,13 +16,18 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Configure spaCy cache directory.
-# The app downloads en_core_web_lg at runtime into this path if it is missing.
+# The app downloads en_core_web_md at runtime into this path if it is missing.
 # In production, override SPACY_MODEL_DIR to a mounted persistent volume so the
-# 600MB model is fetched only once (Railway: mount /data and set SPACY_MODEL_DIR=/data/spacy).
+# model is fetched only once (Railway: mount /data and set SPACY_MODEL_DIR=/data/spacy).
 ENV SPACY_MODEL_DIR=/app/runtime_models/spacy
 
 # Copy application code
 COPY . .
+
+# Pre-download spaCy model during build directly to the configured storage dir
+RUN mkdir -p /app/runtime_models/spacy && \
+    python -c "from src.rag.spacy_model import ensure_spacy_model; \
+    ensure_spacy_model('en_core_web_md', '3.7.0', '/app/runtime_models/spacy')"
 
 # Expose port (Railway/Render will use $PORT env var)
 EXPOSE 8000
