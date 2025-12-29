@@ -1,4 +1,4 @@
-# Simple NLP Answering System
+# Deployed NLP Answering System
 
 A minimal API service that answers natural-language questions about member messages using retrieval-augmented generation (RAG).
 
